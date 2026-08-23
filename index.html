@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>The world's smallest transformer</title>
+<meta name="description" content="The world's smallest transformer, running in your browser. Four words, two sentences, sixteen numbers. Every one of them is on this page, and you can change them.">
+<style>
+  :root{--paper:#f5f1e6;--ink:#1f1d18;--muted:#6b665a;--rule:#d9d2c2;--green:#4a7c59;--mary:#c8643a;--bob:#3a6fc8;--greet:#4a7c59;--ignore:#8a4a8f;--panel:#fbf9f3}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 Georgia,"Times New Roman",serif}
+  main{max-width:62rem;margin:0 auto;padding:3rem 1.25rem 5rem}
+  h1{font-size:clamp(2.4rem,6vw,4.2rem);line-height:1;margin:0 0 .5rem;letter-spacing:-.02em;font-weight:600}
+  .dek{font-size:1.15rem;color:var(--muted);max-width:38rem;margin:0 0 2.5rem}
+  h2{font-size:1.35rem;margin:3rem 0 .6rem;font-weight:600}
+  p{max-width:40rem}
+  .mono{font-family:'Alegreya Sans SC',sans-serif;font-size:.9rem}
+  .grid{display:grid;grid-template-columns:1fr;gap:1.5rem}
+  @media(min-width:860px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+  .panel{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:1.1rem 1.2rem}
+  .panel h3{margin:0 0 .6rem;font-size:1rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  table{border-collapse:collapse;width:100%}
+  td,th{padding:.25rem .4rem;text-align:center}
+  th{font-weight:600;color:var(--muted);font-size:.85rem}
+  th.row{text-align:right}
+  input.w{width:4.2rem;font:inherit;font-family:'Alegreya Sans SC',sans-serif;text-align:center;border:1px solid var(--rule);border-radius:6px;background:#fff;padding:.2rem}
+  svg{width:100%;height:auto;display:block}
+  .word{font-weight:600}
+  .mary{color:var(--mary)}.bob{color:var(--bob)}.greeted{color:var(--greet)}.ignored{color:var(--ignore)}
+  .bars{display:grid;grid-template-columns:6rem 1fr 3.5rem;gap:.35rem .6rem;align-items:center;margin-top:.5rem}
+  .bar{height:12px;border-radius:6px;background:var(--rule);overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--ink);transition:width .25s}
+  .controls{display:flex;flex-wrap:wrap;gap:1rem 1.5rem;align-items:center;margin:.8rem 0}
+  label{font-size:.95rem}
+  input[type=range]{width:14rem;vertical-align:middle}
+  select,button{font:inherit;padding:.35rem .7rem;border:1px solid var(--ink);background:#fff;border-radius:6px;cursor:pointer}
+  button.primary{background:var(--ink);color:var(--paper)}
+  .out{min-height:3.2rem;font-size:1.25rem;margin:.6rem 0 0;line-height:1.6}
+  .small{font-size:.9rem;color:var(--muted)}
+  .credit{border-top:1px solid var(--rule);margin-top:3.5rem;padding-top:1.2rem;font-size:.95rem;color:var(--muted)}
+  a{color:inherit}
+  .pill{display:inline-block;border:1px solid var(--rule);border-radius:999px;padding:.1rem .6rem;font-size:.8rem;color:var(--muted);margin-left:.4rem;vertical-align:middle}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<main>
+  <h1>The world's smallest transformer.</h1>
+  <p class="dek">Running in your browser. Four words, two sentences, sixteen numbers. Every one of them is on this page, and you can change them.</p>
+
+  <p>The whole training set: <span class="word mary">Mary</span> <span class="word greeted">greeted</span> <span class="word bob">Bob</span>. <span class="word bob">Bob</span> <span class="word ignored">ignored</span> <span class="word mary">Mary</span>. That is all this model has ever read. From it, it learned two things nobody told it: that there are people and verbs, and that there is friendly and unfriendly. Those two facts are the square below.</p>
+
+  <div class="grid">
+    <section class="panel">
+      <h3>The understander <span class="pill">8 numbers</span></h3>
+      <p class="small">Each word gets two coordinates. Left–right turned out to mean <em>verb–person</em>; up–down turned out to mean <em>unfriendly–friendly</em>. Nobody chose that. Edit a number and watch the word move.</p>
+      <table id="embed"></table>
+      <svg id="plane" viewBox="-1.7 -1.7 3.4 3.4" aria-label="The embedding: four words on a square"></svg>
+    </section>
+
+    <section class="panel">
+      <h3>The talker <span class="pill">8 numbers</span></h3>
+      <p class="small">For each word, an arrow in that word's colour. The further a word sits along the orange arrow, the more likely it is to come <em>before</em> <span class="mary word">Mary</span>; the green arrow is for <span class="greeted word">greeted</span>, and so on. Scores are dot products; nothing else.</p>
+      <table id="arrows"></table>
+      <svg id="arrowplane" viewBox="-1.7 -1.7 3.4 3.4" aria-label="The four arrows over the embedding"></svg>
+    </section>
+  </div>
+
+  <h2>Ask it what comes next</h2>
+  <div class="controls">
+    <label>After <select id="from"><option>Mary</option><option>greeted</option><option>Bob</option><option>ignored</option></select></label>
+    <label>Temperature <input type="range" id="temp" min="0.2" max="4" step="0.05" value="0.5"> <span class="mono" id="tempv">0.50</span></label>
+  </div>
+  <div class="bars" id="bars"></div>
+  <p class="small">Scores go through a softmax: <span class="mono">e^(score / temperature)</span>, then divided by the sum. Low temperature is a lookup table. High temperature is a poet.</p>
+
+  <h2>Let it talk</h2>
+  <div class="controls">
+    <button class="primary" id="gen">Generate 12 words</button>
+    <button id="reset">Reset the sixteen</button>
+    <button id="spice">Teach it that people have off days</button>
+  </div>
+  <p class="out" id="out"></p>
+  <p class="small" id="note">With the original two sentences the model is nearly a lookup table: Mary always greets, Bob always ignores. The third button retrains on a world where, once in a blue moon, Mary ignores and Bob greets. Watch the arrows stretch.</p>
+
+  <p class="credit">This page is a playable version of the idea in <a href="https://serrano.academy" rel="noopener">Luis Serrano</a>'s video <em>The world's smallest transformer</em>: the 4-2-4 network, the square, the arrows, the point system. He built it; this just lets you touch it. No attention yet, so the model can still say "Bob saw Bob". That is his third video. Part of <a href="https://worthbuilding.org">The Worth Building Organization</a>.</p>
+</main>
+
+<script>
+(() => {
+  const W = ["Mary","greeted","Bob","ignored"];
+  const cls = ["mary","greeted","bob","ignored"];
+  // Embedding: person axis (x), friendly axis (y). Trained values, rounded, per the video.
+  const E0 = [[1,1],[-1,1],[1,-1],[-1,-1]];
+  // Arrows: for target word j, direction scoring which words precede it.
+  // Trained on two sentences the arrows sit at 45 degrees (+-1,+-1).
+  const A0 = [[-1,-1],[1,1],[-1,1],[1,-1]];
+  // Trained on a world with off days, the arrows elongate (per the video's point system).
+  const A1 = [[-2,-1],[2,1],[-2,1],[2,-1]];
+  let E = E0.map(r=>r.slice()), A = A0.map(r=>r.slice());
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => (Math.round(n*100)/100).toString();
+
+  function tableFor(id, M, labelRow, labelCols, onEdit){
+    const t = $(id); t.innerHTML = "";
+    const h = document.createElement("tr");
+    h.innerHTML = `<th class="row">${labelRow}</th>` + labelCols.map(c=>`<th>${c}</th>`).join("");
+    t.appendChild(h);
+    M.forEach((row,i)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<th class="row ${cls[i]}">${W[i]}</th>` + row.map((v,j)=>`<td><input class="w" data-i="${i}" data-j="${j}" value="${fmt(v)}"></td>`).join("");
+      t.appendChild(tr);
+    });
+    t.querySelectorAll("input").forEach(inp=>inp.addEventListener("change",e=>{
+      const i=+e.target.dataset.i, j=+e.target.dataset.j, v=parseFloat(e.target.value);
+      if(!isNaN(v)){ M[i][j]=v; onEdit(); } else e.target.value=fmt(M[i][j]);
+    }));
+  }
+
+  function drawPlane(svg, withArrows){
+    const s = $(svg); let out = `<line x1="-1.6" y1="0" x2="1.6" y2="0" stroke="#d9d2c2" stroke-width="0.02"/><line x1="0" y1="-1.6" x2="0" y2="1.6" stroke="#d9d2c2" stroke-width="0.02"/>
+      <text x="1.45" y="-0.08" font-size="0.13" fill="#6b665a" text-anchor="end">person</text><text x="-1.45" y="-0.08" font-size="0.13" fill="#6b665a">verb</text>
+      <text x="0.06" y="-1.42" font-size="0.13" fill="#6b665a">friendly</text><text x="0.06" y="1.52" font-size="0.13" fill="#6b665a">unfriendly</text>`;
+    const col = ["#c8643a","#4a7c59","#3a6fc8","#8a4a8f"];
+    if(withArrows){
+      A.forEach((a,j)=>{
+        const n = Math.hypot(a[0],a[1])||1, ux=a[0]/n*0.95, uy=-a[1]/n*0.95;
+        out += `<line x1="0" y1="0" x2="${ux}" y2="${uy}" stroke="${col[j]}" stroke-width="0.035" stroke-linecap="round" opacity="0.85"/>
+                <polygon points="${ux},${uy} ${ux-0.11*Math.cos(Math.atan2(uy,ux)-0.5)},${uy-0.11*Math.sin(Math.atan2(uy,ux)-0.5)} ${ux-0.11*Math.cos(Math.atan2(uy,ux)+0.5)},${uy-0.11*Math.sin(Math.atan2(uy,ux)+0.5)}" fill="${col[j]}"/>`;
+      });
+    }
+    E.forEach((e,i)=>{
+      const x=Math.max(-1.5,Math.min(1.5,e[0])), y=-Math.max(-1.5,Math.min(1.5,e[1]));
+      out += `<circle cx="${x}" cy="${y}" r="0.09" fill="${col[i]}"/><text x="${x}" y="${y-0.16}" font-size="0.15" fill="${col[i]}" text-anchor="middle" font-weight="600" stroke="#fbf9f3" stroke-width="0.06" paint-order="stroke">${W[i]}</text>`;
+    });
+    s.innerHTML = out;
+  }
+
+  function scores(i){ return A.map(a => E[i][0]*a[0] + E[i][1]*a[1]); }
+  function softmax(sc, T){ const ex = sc.map(v=>Math.exp(v/T)); const Z = ex.reduce((a,b)=>a+b,0); return ex.map(v=>v/Z); }
+
+  function renderBars(){
+    const i = W.indexOf($("from").value), T = parseFloat($("temp").value);
+    $("tempv").textContent = T.toFixed(2);
+    const sc = scores(i), p = softmax(sc,T);
+    $("bars").innerHTML = W.map((w,j)=>`<span class="word ${cls[j]}">${w}</span><div class="bar"><i style="width:${(p[j]*100).toFixed(1)}%"></i></div><span class="mono">${(p[j]*100).toFixed(1)}%</span>`).join("");
+  }
+
+  function sample(i,T){ const p = softmax(scores(i),T); let r=Math.random(), acc=0; for(let j=0;j<4;j++){acc+=p[j]; if(r<=acc) return j;} return 3; }
+  function generate(){
+    const T = parseFloat($("temp").value); let i = W.indexOf($("from").value); const seq=[i];
+    for(let k=0;k<11;k++){ i = sample(i,T); seq.push(i); }
+    $("out").innerHTML = seq.map(j=>`<span class="word ${cls[j]}">${W[j]}</span>`).join(" ");
+  }
+
+  function renderAll(){
+    tableFor("embed", E, "word", ["person","friendly"], renderAll);
+    tableFor("arrows", A, "→ word", ["person","friendly"], renderAll);
+    drawPlane("plane", false); drawPlane("arrowplane", true); renderBars();
+  }
+
+  $("from").addEventListener("change", renderBars);
+  $("temp").addEventListener("input", renderBars);
+  $("gen").addEventListener("click", generate);
+  $("reset").addEventListener("click", ()=>{ E=E0.map(r=>r.slice()); A=A0.map(r=>r.slice()); $("out").textContent=""; renderAll(); });
+  $("spice").addEventListener("click", ()=>{ A=A1.map(r=>r.slice()); renderAll(); $("note").textContent="Arrows at ±2, ±1 now: being a person counts double, being friendly counts once. Mary still greets most of the time; Bob greets on a good day."; });
+  renderAll();
+})();
+</script>
+</body>
+</html>
