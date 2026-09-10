@@ -18,7 +18,7 @@ python3 -m http.server 8000
 
 ## Part of
 
-[Worth Building](https://worthbuilding.org) — small sites, each a future worth building with a working instrument instead of an essay.
+[Worth Building](https://worthbuilding.org) — small sites, something unique in its own right.
 
 ## License
 
